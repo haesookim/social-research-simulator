@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal, LearnMethods, SelectMethods } from "./Modal";
 import randomValue from "./Utils";
 import "./style.scss";
@@ -15,12 +15,19 @@ const Sim = () => {
 	});
 
 	const [inventory, setInventory] = useState({
-		countables: { researchIdea: 0, studyResults: 0 },
-		booleans: { qualMethod: false, quantMethod: false, mixedMethod: false, irb: false },
+		countables: { researchIdea: 0, researchQuestion: 0, studyResults: 0 },
+		booleans: {
+			qualMethod: false,
+			quantMethod: false,
+			mixedMethod: false,
+			irb: false,
+			domainExpert: false,
+		},
 		status: { IRBWaiting: false, IRBRecieved: false, methodSelected: "", studyRunning: false },
 	});
 
-	const [showInventory, setShowInventory] = useState([false, false]);
+	const [showInventory, setShowInventory] = useState([false, false, false]);
+	const [showSection, setShowSection] = useState([false]);
 
 	const [irbCounter, setIRBCounter] = useState(0);
 	const [studyCounter, setStudyCounter] = useState(0);
@@ -46,6 +53,9 @@ const Sim = () => {
 				},
 			});
 			setDomainKnowledge(domainKnowledge % 20);
+
+			if (!showInventory[0]) setShowInventory([true, showInventory[1], showInventory[2]]);
+			setShowSection([true, showSection[1]]);
 		}
 
 		if (irbCounter > 0) {
@@ -58,6 +68,7 @@ const Sim = () => {
 					setDisplayMessage((displayMessage) =>
 						displayMessage.concat(["You recieved your IRB. You can now conduct your studies."])
 					);
+					setShowSection([showSection[0], true]);
 				} else {
 					setInventory({ ...inventory, status: { ...inventory.status, IRBWaiting: false } });
 					setDisplayMessage((displayMessage) =>
@@ -121,107 +132,163 @@ const Sim = () => {
 							}}>
 							Read the News
 						</button>
-						<button
-							onClick={() => {
-								// setMethodsVisible(!methodsVisible);
-								setModalActive(true);
-								buttonHandler(
-									"Research methods are hard to get. Trying to understand them makes you feel a little bit better about yourself.",
-									true
-								);
-								setModalContent(
-									LearnMethods(buttonHandler, setModalActive, setMethodKnowledge, methodKnowledge)
-								);
-							}}>
-							Study Research Methods
-						</button>
 					</div>
 				</div>
 
-				<div className="section" id="Elaboration">
-					<div className="section-title title">Elaboration</div>
-					<div className="button-wrapper">
-						<button
-							disabled={inventory.status.studyRunning}
-							onClick={() => {
-								setModalActive(true);
-								buttonHandler(
-									"You wonder what might be the best way to answer your research question.",
-									true
-								);
-								setModalContent(
-									SelectMethods(
-										buttonHandler,
-										setModalActive,
-										methodKnowledge,
-										inventory,
-										setInventory
-									)
-								);
-							}}>
-							Select Method
-						</button>
-						<button
-							disabled={inventory.status.IRBWaiting || inventory.status.IRBRecieved}
-							onClick={() => {
-								buttonHandler("You have submitted your IRB. Fingers Crossed.");
-								setInventory({ ...inventory, status: { ...inventory.status, IRBWaiting: true } });
-								setIRBCounter(randomValue(6, 6));
-							}}>
-							Apply for IRB
-						</button>
-						<button
-							disabled={inventory.status.studyRunning || !inventory.status.IRBRecieved}
-							onClick={() => {
-								buttonHandler("You begin to run your study.");
-								let range, val;
-								if (inventory.status.methodSelected === "Qualitative") {
-									[range, val] = [6, 6];
-								} else if (inventory.status.methodSelected === "Quantitative") {
-									[range, val] = [6, 3];
-								} else if (inventory.status.methodSelected === "Mixed Methods") {
-									[range, val] = [8, 8];
-								} else {
-									buttonHandler("You were unable to run your study.", true);
-									return;
-								}
-								setStudyCounter(randomValue(range, val));
-								setInventory({ ...inventory, status: { ...inventory.status, studyRunning: true } });
-							}}>
-							Obtain Data
-						</button>
-						{inventory.status.studyRunning && (
+				{showSection[0] && (
+					<div className="section" id="Elaboration">
+						<div className="section-title title">Development</div>
+						<div className="button-wrapper">
 							<button
 								onClick={() => {
+									// setMethodsVisible(!methodsVisible);
+									setModalActive(true);
 									buttonHandler(
-										"This isn't working like you thought it would. You stopped running your study.",
+										"Research methods are hard to get. Trying to understand them makes you feel a little bit better about yourself.",
 										true
 									);
-									setStudyCounter(0);
+									setModalContent(
+										LearnMethods(buttonHandler, setModalActive, setMethodKnowledge, methodKnowledge)
+									);
+								}}>
+								Study Research Methods
+							</button>
+							<button
+								disabled={inventory.countables.researchIdea === 0}
+								onClick={() => {
+									let rand = randomValue(10);
+									if (rand > 8) {
+										buttonHandler("You have developed a Research Question.");
+										setInventory({
+											...inventory,
+											countables: {
+												...inventory.countables,
+												researchIdea: inventory.countables.researchIdea - 1,
+												researchQuestion: inventory.countables.researchQuestion + 1,
+											},
+										});
+									} else if (rand > 3) {
+										buttonHandler("You need some more time to devlop this idea.");
+									} else {
+										buttonHandler(
+											"You couldn't come up with a way to make this into an interesting research question."
+										);
+										setInventory({
+											...inventory,
+											countables: {
+												...inventory.countables,
+												researchIdea: inventory.countables.researchIdea - 1,
+											},
+										});
+									}
+								}}>
+								Develop Research Idea
+							</button>
+							<button
+								disabled={
+									inventory.status.studyRunning || inventory.countables.researchQuestion === 0
+								}
+								onClick={() => {
+									setModalActive(true);
+									buttonHandler(
+										"You wonder what might be the best way to answer your research question.",
+										true
+									);
+									setModalContent(
+										SelectMethods(
+											buttonHandler,
+											setModalActive,
+											methodKnowledge,
+											inventory,
+											setInventory
+										)
+									);
+								}}>
+								Select Method
+							</button>
+							<button
+								disabled={
+									inventory.status.IRBWaiting ||
+									inventory.status.IRBRecieved ||
+									inventory.countables.researchQuestion === 0
+								}
+								onClick={() => {
+									buttonHandler("You have submitted your IRB. Fingers Crossed.");
+									setInventory({ ...inventory, status: { ...inventory.status, IRBWaiting: true } });
+									setIRBCounter(randomValue(6, 6));
+								}}>
+								Apply for IRB
+							</button>
+						</div>
+					</div>
+				)}
+
+				{showSection[1] && (
+					<div className="section" id="Execution">
+						<div className="section-title title">Data Collection</div>
+						<div className="button-wrapper">
+							<button
+								disabled={inventory.status.studyRunning || !inventory.status.IRBRecieved}
+								onClick={() => {
+									buttonHandler("You begin to run your study.");
+									let range, val;
+									if (inventory.status.methodSelected === "Qualitative") {
+										[range, val] = [6, 6];
+									} else if (inventory.status.methodSelected === "Quantitative") {
+										[range, val] = [6, 3];
+									} else if (inventory.status.methodSelected === "Mixed Methods") {
+										[range, val] = [8, 8];
+									} else {
+										buttonHandler("You were unable to run your study.", true);
+										return;
+									}
+									setStudyCounter(randomValue(range, val));
 									setInventory({
 										...inventory,
-										status: { ...inventory.status, studyRunning: false },
+										status: { ...inventory.status, studyRunning: true },
 									});
 								}}>
-								Cancel Study
+								Obtain Data
 							</button>
-						)}
+							{inventory.status.studyRunning && (
+								<button
+									onClick={() => {
+										buttonHandler(
+											"This isn't working like you thought it would. You stopped running your study.",
+											true
+										);
+										setStudyCounter(0);
+										setInventory({
+											...inventory,
+											status: { ...inventory.status, studyRunning: false },
+										});
+									}}>
+									Cancel Study
+								</button>
+							)}
+						</div>
 					</div>
-				</div>
+				)}
 			</div>
 
 			<div id="inventory">
-				<div id="exploration" className="inventory-section">
-					<div className="inventory-title title"></div>
-					<div className="inventory-item">
-						<div className="inventory-item-name">Research Ideas</div>
-						<div className="inventory-item-value">{inventory.countables.researchIdea}</div>
+				{showInventory[0] && (
+					<div id="exploration" className="inventory-section">
+						<div className="inventory-title title"></div>
+						<div className="inventory-item">
+							<div className="inventory-item-name">Research Ideas</div>
+							<div className="inventory-item-value">{inventory.countables.researchIdea}</div>
+						</div>
+						<div className="inventory-item">
+							<div className="inventory-item-name">Research Questions</div>
+							<div className="inventory-item-value">{inventory.countables.researchQuestion}</div>
+						</div>
+						<div className="inventory-item">
+							<div className="inventory-item-name">Results</div>
+							<div className="inventory-item-value">{inventory.countables.studyResults}</div>
+						</div>
 					</div>
-					<div className="inventory-item">
-						<div className="inventory-item-name">Results</div>
-						<div className="inventory-item-value">{inventory.countables.studyResults}</div>
-					</div>
-				</div>
+				)}
 
 				<div id="status" className="inventory-section">
 					<div className="inventory-title title">Status</div>

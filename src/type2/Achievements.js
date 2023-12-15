@@ -12,12 +12,12 @@ let achievements = {
 	neverSayNever: {
 		title: "Never Say Never",
 		desc: "Did I say you will never get an IRB rejected again? Well, in my defense, I didn't think it was possible. You proved me wrong.",
-		how: "Get an IRB rejected while having the 'irbSkillz' perk.",
+		how: "Get an IRB rejected while having the 'irbSkillz' ability.",
 	},
 
 	indecisive: {
 		title: "Have to Make Sure",
 		desc: "Don't let anyone tell you you were wrong for canceling that study. You and I both know it was the only way.",
-		how: "Cancel a study.",
+		how: "Cancel a study while it is running.",
 	},
 };

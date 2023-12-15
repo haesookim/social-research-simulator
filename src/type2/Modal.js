@@ -36,12 +36,19 @@ const LearnMethods = (buttonHandler, setModalActive, setMethodKnowledge, methodK
 						select("You decide to study more on qualitative methods.");
 						setMethodKnowledge({
 							...methodKnowledge,
-							qualitative: methodKnowledge.qualitative + 2,
+							qualitative: methodKnowledge.qualitative + randomValue(3),
 						});
 					}}>
 					Qualitative Methods
 				</button>
-				<button onClick={() => select("You decide to study more on quantitative methods.")}>
+				<button
+					onClick={() => {
+						select("You decide to study more on quantitative methods.");
+						setMethodKnowledge({
+							...methodKnowledge,
+							qualitative: methodKnowledge.quantitative + randomValue(3),
+						});
+					}}>
 					Quantitative Methods
 				</button>
 			</div>
