@@ -1,0 +1,166 @@
+#page-container {
+	background-color: white;
+
+	place-self: stretch center;
+
+	// Desktop layout
+
+	display: grid;
+	grid-template-columns: 250px 1fr 300px;
+
+	// height: calc(100vh - 60px);
+
+	padding: 30px 0;
+
+	font-family: "Times New Roman", Times, serif !important;
+}
+
+#modal {
+	width: 100vw;
+	height: 100vh;
+	position: absolute;
+	top: 0;
+	left: 0;
+	background-color: rgba(255, 255, 255, 0.7);
+	display: grid;
+
+	.modal-container {
+		background-color: white;
+		border: 1px black solid;
+		place-self: center;
+
+		width: fit-content;
+		max-width: 550px;
+		height: fit-content;
+		padding: 30px;
+
+		position: relative;
+		top: -100px;
+
+		display: grid;
+		row-gap: 8px;
+
+		.modal-close {
+			width: fit-content;
+			place-self: end;
+			cursor: pointer;
+
+			&:hover {
+				color: rgb(209, 209, 209);
+			}
+		}
+	}
+
+	.modal-title,
+	.modal-message {
+		text-align: left;
+		margin-bottom: 16px;
+	}
+}
+
+.title {
+	font-weight: bolder;
+}
+
+#display {
+	display: flex;
+
+	flex-direction: column-reverse;
+	justify-content: flex-end;
+	overflow-y: auto;
+	max-height: calc(100vh - 60px);
+
+	text-align: left;
+	// padding-top: 30px;
+
+	.fade {
+		animation: 1s ease-in fadeIn;
+	}
+
+	.display-message {
+		margin: 8px 0;
+	}
+}
+
+#controls {
+	display: flex;
+	.section {
+		margin: 0 16px;
+	}
+	.section-title {
+		width: 100%;
+		text-align: left;
+		margin-bottom: 16px;
+	}
+	.button-wrapper {
+		display: flex;
+		flex-direction: column;
+		button {
+			margin-bottom: 8px;
+		}
+	}
+}
+
+#inventory {
+	padding: 0 30px;
+	.inventory-section {
+		border: 1px black solid;
+		padding: 8px 16px;
+		margin: 16px 0;
+
+		.inventory-title {
+			margin-bottom: 16px;
+		}
+
+		.inventory-item {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 8px;
+		}
+	}
+}
+
+.button-wrapper {
+	display: grid;
+	grid-auto-flow: column;
+
+	column-gap: 16px;
+	place-items: center;
+
+	button {
+		background: none;
+		border: none;
+		border: 1px black solid;
+		width: 150px;
+		color: black;
+		font-weight: 400;
+		padding: 8px;
+		// margin: 0 8px;
+
+		font-family: "Times New Roman", Times, serif;
+
+		cursor: pointer;
+		&:hover {
+			background-color: rgb(209, 209, 209);
+		}
+		transition: all ease-out 0.2s;
+
+		&:disabled {
+			color: rgb(209, 209, 209);
+			border-color: rgb(209, 209, 209);
+			background-color: white;
+			cursor: not-allowed;
+		}
+	}
+}
+
+//Animations
+
+@keyframes fadeIn {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 100%;
+	}
+}
