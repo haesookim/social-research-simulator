@@ -8,6 +8,7 @@ import {
 	SelectQual,
 	SelectQuant,
 	Cancelled,
+	EthicalQuestions,
 } from "./Modal";
 import randomValue from "./Utils";
 import "./style.scss";
@@ -498,8 +499,7 @@ const Sim = () => {
 			case 1:
 				//you have an error in your paper (domainknowledge)
 				if (inventory.countables.journalPapers + inventory.countables.conferencePapers > 0) {
-					buttonHandler("");
-
+					//buttonHandler("");
 					// you have an error in your paper (domainknowledge)
 					// your paper has methodological issues (methodknowledge) --> maybe not
 					//you are invited into a talk
@@ -521,6 +521,10 @@ const Sim = () => {
 			case 3:
 				// You have been unethical
 				if (unethicalCounter > 0) {
+					buttonHandler(
+						"Someone posts on social media calling you out on your unethical research practices: deep down, you know it's true. You just never thought anyone would find out.",
+						true
+					);
 					setModalActive(true);
 					setModalContent(
 						Cancelled(
@@ -541,8 +545,18 @@ const Sim = () => {
 					ethicsKnowledge < 20
 				) {
 					buttonHandler(
-						"You receive an email about the potential negative ethical implications of your work.",
+						"You receive an email about the potential negative ethical implications of your work.  You admittedly haven't thought about this before.",
 						true
+					);
+					setModalContent(
+						EthicalQuestions(
+							buttonHandler,
+							setModalActive,
+							unethicalCounter,
+							setUnethicalCounter,
+							inventory,
+							setInventory
+						)
 					);
 				}
 				break;

@@ -432,6 +432,54 @@ const Cancelled = (
 	);
 };
 
+const EthicalQuestions = (
+	buttonHandler,
+	setModalActive,
+	unethicalCounter,
+	setUnethicalCounter,
+	inventory,
+	setInventory
+) => {
+	const select = (message) => {
+		buttonHandler(message);
+		setModalActive(false);
+	};
+
+	return (
+		<div className="modal-content">
+			<div className="modal-title title">Subject: Regarding your recent paper</div>
+			<div className="modal-message">
+				You receive an email about the potential negative ethical implications of your work. You
+				admittedly haven't thought about this before.
+				<br />
+				<br />
+				How do you respond?
+			</div>
+
+			<div className="button-wrapper">
+				<button
+					onClick={() => {
+						select(
+							"You ignored the email. They'll probably think it got lost in your inbox and forget about it."
+						);
+						setUnethicalCounter(unethicalCounter + 1);
+					}}>
+					Ignore
+				</button>
+
+				<button
+					onClick={() => {
+						select(
+							"You respond to the email saying that you've never thought about this, and that you'll try to do better next time."
+						);
+					}}>
+					Admit your mistakes
+				</button>
+			</div>
+		</div>
+	);
+};
+
 export {
 	Modal,
 	LearnMethods,
@@ -441,4 +489,5 @@ export {
 	SelectQual,
 	SelectQuant,
 	Cancelled,
+	EthicalQuestions,
 };
