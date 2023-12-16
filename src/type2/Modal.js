@@ -36,7 +36,7 @@ const LearnMethods = (buttonHandler, setModalActive, setMethodKnowledge, methodK
 						select("You decide to study more on qualitative methods.");
 						setMethodKnowledge({
 							...methodKnowledge,
-							qualitative: methodKnowledge.qualitative + randomValue(3, 3),
+							qualitative: methodKnowledge.qualitative + randomValue(5, 3),
 						});
 					}}>
 					Qualitative Methods
@@ -46,7 +46,7 @@ const LearnMethods = (buttonHandler, setModalActive, setMethodKnowledge, methodK
 						select("You decide to study more on quantitative methods.");
 						setMethodKnowledge({
 							...methodKnowledge,
-							quantitative: methodKnowledge.quantitative + randomValue(3, 3),
+							quantitative: methodKnowledge.quantitative + randomValue(5, 3),
 						});
 					}}>
 					Quantitative Methods
@@ -297,7 +297,7 @@ const SelectVenue = (buttonHandler, setModalActive, inventory, setInventory) => 
 						select("You decide to submit your work to a journal.");
 						setInventory({
 							...inventory,
-							status: { ...inventory.status, methodSelected: "Journal" },
+							status: { ...inventory.status, venueSelected: "Journal" },
 						});
 					}}>
 					Journal
@@ -307,7 +307,14 @@ const SelectVenue = (buttonHandler, setModalActive, inventory, setInventory) => 
 	);
 };
 
-const FakeResults = (buttonHandler, setModalActive, inventory, setInventory) => {
+const FakeResults = (
+	buttonHandler,
+	setModalActive,
+	inventory,
+	setInventory,
+	unethicalCounter,
+	setUnethicalCounter
+) => {
 	const select = (message) => {
 		buttonHandler(message);
 		setModalActive(false);
@@ -339,6 +346,7 @@ const FakeResults = (buttonHandler, setModalActive, inventory, setInventory) => 
 							},
 							status: { ...inventory.status, paperWriting: false },
 						});
+						setUnethicalCounter(unethicalCounter + 1);
 					}}>
 					Ignore the Problem
 				</button>
@@ -361,4 +369,76 @@ const FakeResults = (buttonHandler, setModalActive, inventory, setInventory) => 
 	);
 };
 
-export { Modal, LearnMethods, SelectMethods, SelectVenue, FakeResults, SelectQual, SelectQuant };
+const Cancelled = (
+	buttonHandler,
+	setModalActive,
+	unethicalCounter,
+	setUnethicalCounter,
+	inventory,
+	setInventory
+) => {
+	const select = (message) => {
+		buttonHandler(message);
+		setModalActive(false);
+	};
+
+	return (
+		<div className="modal-content">
+			<div className="modal-title title">#Cancelled</div>
+			<div className="modal-message">
+				Someone posts on social media calling you out on your unethical research practices: deep
+				down, you know it's true. You just never thought anyone would find out.
+				<br />
+				<br />
+				There really isn't much you can do.
+			</div>
+
+			<div className="button-wrapper">
+				<button
+					onClick={() => {
+						select(
+							"There's nothing you can do. You gracefully accept the fallout to the best of your ability."
+						);
+						setUnethicalCounter(unethicalCounter - 1);
+						setInventory({
+							...inventory,
+							outreach: {
+								...inventory.outreach,
+								followers:
+									inventory.outreach.followers - randomValue(inventory.outreach.followers / 3),
+							},
+						});
+					}}>
+					Oh no
+				</button>
+
+				<button
+					onClick={() => {
+						select(
+							"Despite your better judgement, you throw a tantrum on social media. It did not go well."
+						);
+						setInventory({
+							...inventory,
+							outreach: {
+								...inventory.outreach,
+								followers: randomValue(inventory.outreach.followers / 3),
+							},
+						});
+					}}>
+					This is a conspiracy!
+				</button>
+			</div>
+		</div>
+	);
+};
+
+export {
+	Modal,
+	LearnMethods,
+	SelectMethods,
+	SelectVenue,
+	FakeResults,
+	SelectQual,
+	SelectQuant,
+	Cancelled,
+};

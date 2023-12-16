@@ -7,6 +7,7 @@ import {
 	FakeResults,
 	SelectQual,
 	SelectQuant,
+	Cancelled,
 } from "./Modal";
 import randomValue from "./Utils";
 import "./style.scss";
@@ -68,11 +69,18 @@ const Sim = () => {
 	const [showInventory, setShowInventory] = useState([false, false, false]);
 	const [showSection, setShowSection] = useState([false, false, false]);
 
-	const [irbCounter, setIRBCounter] = useState(0);
+	// Misc. counters
 	const [irbTimes, setIRBTimes] = useState(0);
+	const [clickTimes, setClickTimes] = useState(0);
+
+	const [irbCounter, setIRBCounter] = useState(0);
+
+	//studycounter = qualcounter + quantcounter
 	const [studyCounter, setStudyCounter] = useState(0);
 	const [qualCounter, setQualCounter] = useState(0);
 	const [quantCounter, setQuantCounter] = useState(0);
+
+	const [unethicalCounter, setUnethicalCounter] = useState(0);
 
 	const [paperCounter, setPaperCounter] = useState(0);
 	const [submissionCounter, setSubmissionCounter] = useState(0);
@@ -81,21 +89,63 @@ const Sim = () => {
 	const [modalContent, setModalContent] = useState(LearnMethods);
 
 	function buttonHandler(nextMessage, intermediate = false) {
-		setDisplayMessage((displayMessage) => [...displayMessage, nextMessage]);
-
 		if (intermediate) {
+			setDisplayMessage((displayMessage) => [...displayMessage, nextMessage]);
 			return;
 		}
+
+		if (
+			randomValue(10, inventory.countables.journalPapers + inventory.countables.conferencePapers) >
+				8 &&
+			inventory.countables.journalPapers + inventory.countables.conferencePapers > 0
+		) {
+			let bonus = 1;
+			if (
+				!(inventory.status.usingQuant && !inventory.booleans.quantMethod) &&
+				!(inventory.status.usingQual && !inventory.booleans.qualMethod)
+			) {
+				bonus += 3;
+			}
+			if (randomValue(10, socialKnowledge / 10) > 5) {
+				//social knowledge
+				bonus += 1;
+			}
+			if (randomValue(10, ethicsKnowledge / 10) > 5) {
+				//social knowledge
+				bonus += 1;
+			}
+			setInventory((inventory) => {
+				return {
+					...inventory,
+					outreach: {
+						...inventory.outreach,
+						citations:
+							inventory.outreach.citations +
+							randomValue(bonus * (Math.floor(Math.log10(inventory.outreach.citations)) + 1)),
+					},
+				};
+			});
+			setDisplayMessage((displayMessage) =>
+				displayMessage.concat([
+					"You have gotten some more citations on your paper. You feel like an accomplished researcher.",
+				])
+			);
+		}
+
+		setDisplayMessage((displayMessage) => [...displayMessage, nextMessage]);
+
 		if (domainKnowledge / 20 >= inventory.countables.researchIdea + 1) {
 			setDisplayMessage((displayMessage) =>
 				displayMessage.concat(["You get a new Research Idea."])
 			);
-			setInventory({
-				...inventory,
-				countables: {
-					...inventory.countables,
-					researchIdea: inventory.countables.researchIdea + 1,
-				},
+			setInventory((inventory) => {
+				return {
+					...inventory,
+					countables: {
+						...inventory.countables,
+						researchIdea: inventory.countables.researchIdea + 1,
+					},
+				};
 			});
 
 			setDomainKnowledge(domainKnowledge % 20);
@@ -110,19 +160,22 @@ const Sim = () => {
 		paperWritingLogic();
 		submissionLogic();
 
-		if (randomValue(100) < 5) {
+		if (randomValue(10) < 5) {
 			randomEventLogic();
 		}
+		setClickTimes(clickTimes);
 	}
 
 	function methodLogic() {
 		if (methodKnowledge.qualitative > 20 && !inventory.booleans.qualMethod) {
-			setInventory({
-				...inventory,
-				booleans: {
-					...inventory.booleans,
-					qualMethod: true,
-				},
+			setInventory((inventory) => {
+				return {
+					...inventory,
+					booleans: {
+						...inventory.booleans,
+						qualMethod: true,
+					},
+				};
 			});
 			setDisplayMessage((displayMessage) =>
 				displayMessage.concat([
@@ -131,12 +184,14 @@ const Sim = () => {
 			);
 		}
 		if (methodKnowledge.quantitative > 20 && !inventory.booleans.quantMethod) {
-			setInventory({
-				...inventory,
-				booleans: {
-					...inventory.booleans,
-					quantMethod: true,
-				},
+			setInventory((inventory) => {
+				return {
+					...inventory,
+					booleans: {
+						...inventory.booleans,
+						quantMethod: true,
+					},
+				};
 			});
 			setDisplayMessage((displayMessage) =>
 				displayMessage.concat([
@@ -149,17 +204,21 @@ const Sim = () => {
 	function IRBLogic() {
 		if (irbCounter > 0) {
 			if (irbCounter === 1) {
-				if (randomValue(10, irbTimes / 2) > 7) {
-					setInventory({
-						...inventory,
-						status: { ...inventory.status, IRBWaiting: false, IRBRecieved: true },
+				if (randomValue(10, irbTimes / 5 + ethicsKnowledge / 10) > 5) {
+					setInventory((inventory) => {
+						return {
+							...inventory,
+							status: { ...inventory.status, IRBWaiting: false, IRBRecieved: true },
+						};
 					});
 					setDisplayMessage((displayMessage) =>
 						displayMessage.concat(["You recieved your IRB. You can now conduct your studies."])
 					);
 					setShowSection([showSection[0], true, showSection[2]]);
 				} else {
-					setInventory({ ...inventory, status: { ...inventory.status, IRBWaiting: false } });
+					setInventory((inventory) => {
+						return { ...inventory, status: { ...inventory.status, IRBWaiting: false } };
+					});
 					setDisplayMessage((displayMessage) =>
 						displayMessage.concat([
 							"The IRB committee didn't approve your request. Back to the drawing board.",
@@ -176,13 +235,15 @@ const Sim = () => {
 	function studyLogic() {
 		if (studyCounter > 0 && inventory.status.studyRunning) {
 			if (studyCounter === 1) {
-				setInventory({
-					...inventory,
-					countables: {
-						...inventory.countables,
-						studyResults: inventory.countables.studyResults + 1,
-					},
-					status: { ...inventory.status, studyRunning: false },
+				setInventory((inventory) => {
+					return {
+						...inventory,
+						countables: {
+							...inventory.countables,
+							studyResults: inventory.countables.studyResults + 1,
+						},
+						status: { ...inventory.status, studyRunning: false },
+					};
 				});
 				setDisplayMessage((displayMessage) =>
 					displayMessage.concat(["You finished running the study."])
@@ -195,7 +256,7 @@ const Sim = () => {
 
 	function paperWritingLogic() {
 		if (paperCounter > 0) {
-			if (randomValue(100) > 95) {
+			if (randomValue(100) > 95 && !modalActive) {
 				// Fake Results
 				setDisplayMessage((displayMessage) =>
 					displayMessage.concat([
@@ -203,29 +264,32 @@ const Sim = () => {
 					])
 				);
 				setModalActive(true);
-				setModalContent(FakeResults(buttonHandler, setModalActive, inventory, setInventory));
-				setInventory({
-					...inventory,
-					countables: {
-						...inventory.countables,
-						studyResults: inventory.countables.studyResults - 1,
-						draftPapers: inventory.countables.draftPapers + 1,
-					},
-					status: { ...inventory.status, paperWriting: false },
-				});
+				setModalContent(
+					FakeResults(
+						buttonHandler,
+						setModalActive,
+						inventory,
+						setInventory,
+						unethicalCounter,
+						setUnethicalCounter
+					)
+				);
+
 				setPaperCounter(0);
 				return;
 			}
 
 			if (paperCounter === 1) {
-				setInventory({
-					...inventory,
-					countables: {
-						...inventory.countables,
-						studyResults: inventory.countables.studyResults - 1,
-						draftPapers: inventory.countables.draftPapers + 1,
-					},
-					status: { ...inventory.status, paperWriting: false },
+				setInventory((inventory) => {
+					return {
+						...inventory,
+						countables: {
+							...inventory.countables,
+							studyResults: inventory.countables.studyResults - 1,
+							draftPapers: inventory.countables.draftPapers + 1,
+						},
+						status: { ...inventory.status, paperWriting: false },
+					};
 				});
 				setDisplayMessage((displayMessage) =>
 					displayMessage.concat(["You finished a draft paper."])
@@ -249,18 +313,17 @@ const Sim = () => {
 			bonus += 3;
 		}
 
-		if (randomValue(10, Math.floor(Math.log10(socialKnowledge))) > 5) {
+		if (randomValue(10, socialKnowledge / 10) < 5) {
 			//social knowledge
 			comment +=
-				"They mentioned that the phenomena is not described accurately, and advised you to do more research on the subject. ";
+				"They mentioned that the background and premise is not described accurately, and advised you to do more research on the underlying social contexts. ";
 		} else {
 			bonus += 2;
 		}
 
-		if (randomValue(10, Math.floor(Math.log10(ethicsKnowledge))) > 5) {
+		if (randomValue(10, ethicsKnowledge / 10) < 5) {
 			//ethics
-			comment +=
-				"The reviewers noted that the work can have harmful implications to certain populations. ";
+			comment += "The reviewers noted that the results of the work can have harmful implications. ";
 		} else {
 			bonus += 1;
 		}
@@ -270,13 +333,15 @@ const Sim = () => {
 				if (inventory.status.venueSelected === "Conference") {
 					if (randomValue(10, bonus) > 8) {
 						// accepted
-						setInventory({
-							...inventory,
-							countables: {
-								...inventory.countables,
-								draftPapers: inventory.countables.draftPapers - 1,
-								conferencePapers: inventory.countables.conferencePapers + 1,
-							},
+						setInventory((inventory) => {
+							return {
+								...inventory,
+								countables: {
+									...inventory.countables,
+									draftPapers: inventory.countables.draftPapers - 1,
+									conferencePapers: inventory.countables.conferencePapers + 1,
+								},
+							};
 						});
 
 						setDisplayMessage((displayMessage) =>
@@ -300,7 +365,7 @@ const Sim = () => {
 					if (inventory.countables.RNRSubmittedPapers > 0) {
 						//RNR logic
 						let rand = randomValue(10, bonus);
-						if (rand > 6) {
+						if (rand > 9) {
 							// Accepted
 							setDisplayMessage((displayMessage) =>
 								displayMessage.concat([
@@ -308,40 +373,46 @@ const Sim = () => {
 								])
 							);
 
-							setInventory({
-								...inventory,
-								countables: {
-									...inventory.countables,
-									draftPapers: inventory.countables.RnRSubmittedPapers - 1,
-									journalPapers: inventory.countables.journalPapers + 1,
-								},
+							setInventory((inventory) => {
+								return {
+									...inventory,
+									countables: {
+										...inventory.countables,
+										draftPapers: inventory.countables.RnRSubmittedPapers - 1,
+										journalPapers: inventory.countables.journalPapers + 1,
+									},
+								};
 							});
-						} else if (rand > 4) {
+						} else if (rand > 7) {
 							setDisplayMessage((displayMessage) =>
 								displayMessage.concat([
 									"The Journal sent back your paper with reviews and a note to resubmit. " +
 										comment,
 								])
 							);
-							setInventory({
-								...inventory,
-								countables: {
-									...inventory.countables,
-									draftPapers: inventory.countables.RnRPapers + 1,
-									journalPapers: inventory.countables.RnRSubmittedPapers - 1,
-								},
+							setInventory((inventory) => {
+								return {
+									...inventory,
+									countables: {
+										...inventory.countables,
+										draftPapers: inventory.countables.RnRPapers + 1,
+										journalPapers: inventory.countables.RnRSubmittedPapers - 1,
+									},
+								};
 							});
 						} else {
 							setDisplayMessage((displayMessage) =>
 								displayMessage.concat(["Your paper was rejected after the revision process."])
 							);
-							setInventory({
-								...inventory,
-								countables: {
-									...inventory.countables,
-									draftPapers: inventory.countables.RnRPapers - 1,
-									journalPapers: inventory.countables.journalPapers + 1,
-								},
+							setInventory((inventory) => {
+								return {
+									...inventory,
+									countables: {
+										...inventory.countables,
+										draftPapers: inventory.countables.RnRPapers - 1,
+										journalPapers: inventory.countables.journalPapers + 1,
+									},
+								};
 							});
 						}
 					} else {
@@ -350,13 +421,15 @@ const Sim = () => {
 								displayMessage.concat(["Your paper was accepted to a scientific journal."])
 							);
 
-							setInventory({
-								...inventory,
-								countables: {
-									...inventory.countables,
-									draftPapers: inventory.countables.draftPapers - 1,
-									journalPapers: inventory.countables.journalPapers + 1,
-								},
+							setInventory((inventory) => {
+								return {
+									...inventory,
+									countables: {
+										...inventory.countables,
+										draftPapers: inventory.countables.draftPapers - 1,
+										journalPapers: inventory.countables.journalPapers + 1,
+									},
+								};
 							});
 						} else {
 							setDisplayMessage((displayMessage) =>
@@ -377,18 +450,42 @@ const Sim = () => {
 
 	function socialMediaLogic() {
 		let followerVal = inventory.outreach.followers;
+
 		let log = 1;
 		if (followerVal > 0) {
 			log = Math.log10(followerVal) / 2;
 		}
 
-		let rand = randomValue(Math.floor(10 ** log));
-		setInventory({
-			...inventory,
-			outreach: {
-				...inventory.outreach,
-				followers: followerVal + rand,
-			},
+		if (randomValue(100) < 1) {
+			log = log + 2;
+			let rand = randomValue(Math.floor(10 ** log));
+			setInventory((inventory) => {
+				return {
+					...inventory,
+					outreach: {
+						...inventory.outreach,
+						followers: followerVal + rand,
+					},
+				};
+			});
+
+			buttonHandler(
+				"You make a post about your research on social media. The post went viral and you gained " +
+					rand +
+					" followers."
+			);
+			return;
+		}
+
+		let rand = randomValue(Math.floor(10 ** log) * 2);
+		setInventory((inventory) => {
+			return {
+				...inventory,
+				outreach: {
+					...inventory.outreach,
+					followers: followerVal + rand,
+				},
+			};
 		});
 
 		buttonHandler(
@@ -397,9 +494,62 @@ const Sim = () => {
 	}
 
 	function randomEventLogic() {
-		// You have a paper
+		switch (randomValue(5)) {
+			case 1:
+				//you have an error in your paper (domainknowledge)
+				if (inventory.countables.journalPapers + inventory.countables.conferencePapers > 0) {
+					buttonHandler("");
 
-		if (inventory.countables.journalPapers > 0 || inventory.countables.conferencePapers > 0) {
+					// you have an error in your paper (domainknowledge)
+					// your paper has methodological issues (methodknowledge) --> maybe not
+					//you are invited into a talk
+				}
+				break;
+			case 2:
+				// You have a social media following
+				if (inventory.outreach.followers > 1000) {
+					if (randomValue(5, Math.floor(Math.log10(inventory.outreach.followers)) > 4)) {
+						// someone picks a fight with you on social media
+						//choice: fight back on social media
+						// result: you gain followers
+						// result: you say the wrong thing and lose followers and respect.
+						//choice: block social media
+						// results: follower tabs is gone
+					}
+				}
+				break;
+			case 3:
+				// You have been unethical
+				if (unethicalCounter > 0) {
+					setModalActive(true);
+					setModalContent(
+						Cancelled(
+							buttonHandler,
+							setModalActive,
+							unethicalCounter,
+							setUnethicalCounter,
+							inventory,
+							setInventory
+						)
+					);
+				}
+				break;
+			case 4:
+				// your research has unethical implications
+				if (
+					inventory.countables.journalPapers + inventory.countables.conferencePapers > 0 &&
+					ethicsKnowledge < 20
+				) {
+					buttonHandler(
+						"You receive an email about the potential negative ethical implications of your work.",
+						true
+					);
+				}
+				break;
+			default:
+				break;
+
+			//}
 		}
 	}
 
@@ -465,16 +615,16 @@ const Sim = () => {
 									buttonHandler(
 										"You sit down to consider the potential social implications of your research idea. How can this work benefit society?"
 									);
-									setSocialKnowledge(randomValue(3, 3));
+									setSocialKnowledge(socialKnowledge + randomValue(3, 3));
 								}}>
 								Consider Social Implications
 							</button>
 							<button
 								onClick={() => {
 									buttonHandler(
-										"Research is not always ethical. You think about the ways how the research process and implications could be harmful, and seek ways to prevent itd."
+										"Research is not always ethical. You think about the ways how the research process and implications could be harmful, and seek ways to prevent it."
 									);
-									setEthicsKnowledge(randomValue(3, 2));
+									setEthicsKnowledge(ethicsKnowledge + randomValue(3, 2));
 								}}>
 								Consider Ethical Implications
 							</button>
@@ -485,26 +635,30 @@ const Sim = () => {
 									let rand = randomValue(10);
 									if (rand > 8) {
 										buttonHandler("You have developed a Research Question.");
-										setInventory({
-											...inventory,
-											countables: {
-												...inventory.countables,
-												researchIdea: inventory.countables.researchIdea - 1,
-												researchQuestion: inventory.countables.researchQuestion + 1,
-											},
+										setInventory((inventory) => {
+											return {
+												...inventory,
+												countables: {
+													...inventory.countables,
+													researchIdea: inventory.countables.researchIdea - 1,
+													researchQuestion: inventory.countables.researchQuestion + 1,
+												},
+											};
 										});
 									} else if (rand > 3) {
 										buttonHandler("You need some more time to develop this idea.");
 									} else {
 										buttonHandler(
-											"You couldn't come up with a way to make this into an interesting research question."
+											"You couldn't come up with a way to make your idea into an interesting research question."
 										);
-										setInventory({
-											...inventory,
-											countables: {
-												...inventory.countables,
-												researchIdea: inventory.countables.researchIdea - 1,
-											},
+										setInventory((inventory) => {
+											return {
+												...inventory,
+												countables: {
+													...inventory.countables,
+													researchIdea: inventory.countables.researchIdea - 1,
+												},
+											};
 										});
 									}
 								}}>
@@ -519,7 +673,9 @@ const Sim = () => {
 								}
 								onClick={() => {
 									buttonHandler("You have submitted your IRB. Fingers Crossed.");
-									setInventory({ ...inventory, status: { ...inventory.status, IRBWaiting: true } });
+									setInventory((inventory) => {
+										return { ...inventory, status: { ...inventory.status, IRBWaiting: true } };
+									});
 									setIRBCounter(randomValue(3, randomValue(3, 1)));
 									setIRBTimes(irbCounter + 1);
 								}}>
@@ -612,9 +768,11 @@ const Sim = () => {
 										return;
 									}
 
-									setInventory({
-										...inventory,
-										status: { ...inventory.status, studyRunning: true },
+									setInventory((inventory) => {
+										return {
+											...inventory,
+											status: { ...inventory.status, studyRunning: true },
+										};
 									});
 								}}>
 								Run Study
@@ -622,7 +780,9 @@ const Sim = () => {
 							{inventory.status.studyRunning && (
 								<button
 									onClick={() => {
-										setStudyCounter(studyCounter - 1);
+										if (studyCounter > 1) {
+											setStudyCounter(studyCounter - 1);
+										}
 										buttonHandler("You put in more effort into running the study.");
 									}}>
 									Work on Study
@@ -636,9 +796,11 @@ const Sim = () => {
 											true
 										);
 										setStudyCounter(0);
-										setInventory({
-											...inventory,
-											status: { ...inventory.status, studyRunning: false },
+										setInventory((inventory) => {
+											return {
+												...inventory,
+												status: { ...inventory.status, studyRunning: false },
+											};
 										});
 									}}>
 									Cancel Study
@@ -656,9 +818,11 @@ const Sim = () => {
 								onClick={() => {
 									buttonHandler("You start writing up the paper based on your results.");
 									setPaperCounter(randomValue(6, 3));
-									setInventory({
-										...inventory,
-										status: { ...inventory.status, paperWriting: true },
+									setInventory((inventory) => {
+										return {
+											...inventory,
+											status: { ...inventory.status, paperWriting: true },
+										};
 									});
 								}}>
 								Write paper
@@ -703,7 +867,7 @@ const Sim = () => {
 								Submit Paper
 							</button>
 
-							{inventory.countables.conferencePapers + inventory.countables.journalPapers > 1 && (
+							{inventory.countables.conferencePapers + inventory.countables.journalPapers >= 1 && (
 								<button
 									onClick={() => {
 										socialMediaLogic();
@@ -711,11 +875,11 @@ const Sim = () => {
 									Post on Social Media
 								</button>
 							)}
-							{inventory.countables.conferencePapers + inventory.countables.journalPapers > 3 && (
+							{inventory.countables.conferencePapers + inventory.countables.journalPapers > 5 && (
 								<button
 									onClick={() => {
 										buttonHandler(
-											"Writing a book about your research seems like a good way to share knowledge"
+											"Writing a book about your research seems like a good way to share knowledge."
 										);
 									}}>
 									Write Book
@@ -746,18 +910,6 @@ const Sim = () => {
 							<div className="inventory-item-name">Draft Papers</div>
 							<div className="inventory-item-value">{inventory.countables.draftPapers}</div>
 						</div>
-						{inventory.countables.conferencePapers > 0 && (
-							<div className="inventory-item">
-								<div className="inventory-item-name">Conference Papers</div>
-								<div className="inventory-item-value">{inventory.countables.conferencePapers}</div>
-							</div>
-						)}
-						{inventory.countables.journalPapers > 0 && (
-							<div className="inventory-item">
-								<div className="inventory-item-name">Journal Papers</div>
-								<div className="inventory-item-value">{inventory.countables.journalPapers}</div>
-							</div>
-						)}
 					</div>
 				)}
 
@@ -776,14 +928,14 @@ const Sim = () => {
 						</div>
 						<div className="inventory-item">
 							<div className="inventory-item-name">Method</div>
-							{inventory.status.usingQual ? (
-								inventory.status.usingQuant ? (
-									<div className="inventory-item-value">Mixed Methods</div>
-								) : (
-									<div className="inventory-item-value">Qualitative</div>
-								)
+							{inventory.status.usingQual && inventory.status.usingQuant ? (
+								<div className="inventory-item-value">Mixed Methods</div>
+							) : inventory.status.usingQual ? (
+								<div className="inventory-item-value">Qualitative</div>
+							) : inventory.status.usingQuant ? (
+								<div className="inventory-item-value">Qualitative</div>
 							) : (
-								<div className="inventory-item-value">Quantitative</div>
+								<div className="inventory-item-value"></div>
 							)}
 						</div>
 						<div className="inventory-item">
@@ -799,6 +951,18 @@ const Sim = () => {
 				{showSection[2] && (
 					<div className="inventory-section">
 						<div className="inventory-title title">Public Outreach</div>
+						{inventory.countables.conferencePapers > 0 && (
+							<div className="inventory-item">
+								<div className="inventory-item-name">Conference Papers</div>
+								<div className="inventory-item-value">{inventory.countables.conferencePapers}</div>
+							</div>
+						)}
+						{inventory.countables.journalPapers > 0 && (
+							<div className="inventory-item">
+								<div className="inventory-item-name">Journal Papers</div>
+								<div className="inventory-item-value">{inventory.countables.journalPapers}</div>
+							</div>
+						)}
 						<div className="inventory-item">
 							<div className="inventory-item-name">Citations</div>
 							<div className="inventory-item-value">{inventory.outreach.citations}</div>
